@@ -11,16 +11,10 @@ export class User {
   @PrimaryGeneratedColumn()
   id: number;
 
-  // 이메일 로그인 계정용 (전화번호 가입 시 null)
+  // 전화번호 인증 가입 (숫자만 저장, 예: 01012345678)
+  // 컬럼은 기존 DB 호환을 위해 nullable이지만 신규 가입은 항상 채워짐
   @Column({ unique: true, nullable: true, type: 'varchar' })
-  email: string | null;
-
-  @Column({ select: false, nullable: true, type: 'varchar' })
-  password: string | null;
-
-  // 전화번호 가입 계정용 (숫자만 저장, 예: 01012345678)
-  @Column({ unique: true, nullable: true, type: 'varchar' })
-  phone: string | null;
+  phone: string;
 
   @Column({ nullable: true, type: 'varchar' })
   nickname: string | null;

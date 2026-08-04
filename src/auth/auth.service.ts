@@ -6,12 +6,9 @@ import {
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { JwtService } from '@nestjs/jwt';
-import * as bcrypt from 'bcryptjs';
 import { User } from './entities/user.entity';
 import { Store } from '../stores/entities/store.entity';
 import { Facility } from '../facilities/entities/facility.entity';
-import { SignupDto } from './dto/signup.dto';
-import { LoginDto } from './dto/login.dto';
 import { PhoneSignupDto } from './dto/phone-auth.dto';
 import { UserRole } from '../common/enums';
 
@@ -24,45 +21,6 @@ export class AuthService {
     private readonly facilityRepo: Repository<Facility>,
     private readonly jwtService: JwtService,
   ) {}
-
-  async signup(dto: SignupDto) {
-    const exists = await this.userRepo.findOne({ where: { email: dto.email } });
-    if (exists) throw new ConflictException('이미 가입된 이메일입니다.');
-
-    const user = await this.userRepo.save(
-      this.userRepo.create({
-        ...dto,
-        password: await bcrypt.hash(dto.password, 10),
-      }),
-    );
-    return this.issueToken(user);
-  }
-
-  async login(dto: LoginDto) {
-    const user = await this.userRepo.findOne({
-      where: { email: dto.email },
-      select: [
-        'id',
-        'email',
-        'password',
-        'phone',
-        'nickname',
-        'role',
-        'storeId',
-        'facilityId',
-      ],
-    });
-    if (
-      !user ||
-      !user.password ||
-      !(await bcrypt.compare(dto.password, user.password))
-    ) {
-      throw new UnauthorizedException(
-        '이메일 또는 비밀번호가 올바르지 않습니다.',
-      );
-    }
-    return this.issueToken(user);
-  }
 
   // ── 전화번호 인증 (SMS 실연동 없이 데모 코드 반환) ──────
   private readonly phoneCodes = new Map<
@@ -128,16 +86,20 @@ export class AuthService {
     });
     if (exists) throw new ConflictException('이미 가입된 번호입니다.');
 
-    // 닉네임을 상호/기관명으로 사용해 프로필 자동 생성 (위치는 데모 기본값)
+    // 온보딩 입력값으로 프로필 생성 (좌표는 데모 기본값 — 지오코딩은 로드맵)
+    const address =
+      [dto.address, dto.addressDetail].filter(Boolean).join(' ') || '주소 미설정';
     let storeId: number | undefined;
     let facilityId: number | undefined;
     if (dto.role === 'STORE') {
       const store = await this.storeRepo.save(
         this.storeRepo.create({
           name: dto.nickname,
-          address: '주소 미설정',
+          address,
           lat: 37.5563,
           lng: 126.9236,
+          phone: dto.contactPhone ?? undefined,
+          photoUrl: dto.photoUrl ?? null,
         }),
       );
       storeId = store.id;
@@ -145,10 +107,11 @@ export class AuthService {
       const facility = await this.facilityRepo.save(
         this.facilityRepo.create({
           name: dto.nickname,
-          type: '복지시설',
-          address: '주소 미설정',
+          type: dto.facilityType ?? '복지시설',
+          address,
           lat: 37.5547,
           lng: 126.9106,
+          phone: dto.contactPhone ?? undefined,
         }),
       );
       facilityId = facility.id;
@@ -185,7 +148,6 @@ export class AuthService {
   private issueToken(user: User) {
     const payload = {
       sub: user.id,
-      email: user.email ?? null,
       phone: user.phone ?? null,
       nickname: user.nickname ?? null,
       role: user.role,

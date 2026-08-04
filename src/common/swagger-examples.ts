@@ -67,10 +67,11 @@ export const COMPLETE_RESPONSE_EXAMPLE = {
 };
 
 export const AUTH_TOKEN_EXAMPLE = {
-  accessToken: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOjEsImVtYWlsIjo…',
+  accessToken: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOjEsInBob25lIjo…',
   user: {
     sub: 1,
-    email: 'store@demo.com',
+    phone: '01011112222',
+    nickname: '어니언 베이커리 홍대점',
     role: 'STORE',
     storeId: 1,
     facilityId: null,
@@ -79,7 +80,8 @@ export const AUTH_TOKEN_EXAMPLE = {
 
 export const USER_EXAMPLE = {
   id: 1,
-  email: 'store@demo.com',
+  phone: '01011112222',
+  nickname: '어니언 베이커리 홍대점',
   role: 'STORE',
   storeId: 1,
   facilityId: null,
