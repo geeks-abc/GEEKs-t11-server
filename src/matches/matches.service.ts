@@ -100,7 +100,8 @@ export class MatchesService {
       throw new UnauthorizedException('유효하지 않은 QR 토큰입니다.');
     }
 
-    return this.dataSource.transaction(async (manager) => {
+    const donation = await this.dataSource.transaction(async (manager) => {
+      // MATCHED → COMPLETED 조건부 업데이트 (동시/재스캔 방어)
       const completed = await manager.update(
         Listing,
         { id: match.listingId, status: ListingStatus.MATCHED },
@@ -120,5 +121,36 @@ export class MatchesService {
         }),
       );
     });
+
+    // 인수 완료 알림 (양측)
+    const payload = {
+      donationId: donation.id,
+      matchId: match.id,
+      listingId: match.listingId,
+      itemName: match.listing.itemName,
+      quantity: match.listing.quantity,
+      weightKg: donation.weightKg,
+    };
+    await this.notificationsService.notify(
+      RecipientType.STORE,
+      match.listing.storeId,
+      'COMPLETED',
+      payload,
+    );
+    await this.notificationsService.notify(
+      RecipientType.FACILITY,
+      match.facilityId,
+      'COMPLETED',
+      payload,
+    );
+
+    // 완료 화면용 요약 (S-03/S-05)
+    return {
+      donation,
+      itemName: match.listing.itemName,
+      quantity: match.listing.quantity,
+      storeName: match.listing.store.name,
+      facilityName: match.facility.name,
+    };
   }
 }
