@@ -11,6 +11,7 @@ import { MatchesModule } from './matches/matches.module';
 import { DonationsModule } from './donations/donations.module';
 import { NotificationsModule } from './notifications/notifications.module';
 import { DashboardModule } from './dashboard/dashboard.module';
+import { UploadsModule } from './uploads/uploads.module';
 
 @Module({
   imports: [
@@ -37,6 +38,7 @@ import { DashboardModule } from './dashboard/dashboard.module';
     DonationsModule,
     NotificationsModule,
     DashboardModule,
+    UploadsModule,
   ],
   controllers: [AppController],
   providers: [AppService],
