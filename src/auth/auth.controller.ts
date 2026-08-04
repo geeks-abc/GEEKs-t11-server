@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Post, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Patch, Post, UseGuards } from '@nestjs/common';
 import {
   ApiBearerAuth,
   ApiCreatedResponse,
@@ -15,6 +15,8 @@ import {
   PhoneSignupDto,
   PhoneVerifyDto,
 } from './dto/phone-auth.dto';
+import { VerifyPasswordDto } from './dto/verify-password.dto';
+import { UpdateProfileDto } from './dto/update-profile.dto';
 import { JwtAuthGuard } from './jwt-auth.guard';
 import { CurrentUser } from './current-user.decorator';
 
@@ -84,5 +86,29 @@ export class AuthController {
   @Get('me')
   me(@CurrentUser() user: { sub: number }) {
     return this.authService.me(user.sub);
+  }
+
+  @ApiOperation({ summary: '마이페이지 비밀번호 확인' })
+  @ApiOkResponse({ schema: { example: { ok: true } } })
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard)
+  @Post('mypage/verify-password')
+  verifyPassword(
+    @CurrentUser() user: { sub: number },
+    @Body() dto: VerifyPasswordDto,
+  ) {
+    return this.authService.verifyPassword(user.sub, dto.currentPassword);
+  }
+
+  @ApiOperation({ summary: '마이페이지 프로필 수정' })
+  @ApiOkResponse({ schema: { example: USER_EXAMPLE } })
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard)
+  @Patch('mypage/profile')
+  updateProfile(
+    @CurrentUser() user: { sub: number },
+    @Body() dto: UpdateProfileDto,
+  ) {
+    return this.authService.updateProfile(user.sub, dto);
   }
 }
