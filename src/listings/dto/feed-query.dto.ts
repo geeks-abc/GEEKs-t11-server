@@ -1,5 +1,5 @@
 import { Type } from 'class-transformer';
-import { IsInt, IsNumber, IsOptional } from 'class-validator';
+import { IsInt, IsNumber, IsOptional, Min } from 'class-validator';
 
 export class FeedQueryDto {
   @Type(() => Number)
@@ -10,5 +10,6 @@ export class FeedQueryDto {
   @IsOptional()
   @Type(() => Number)
   @IsNumber()
+  @Min(0)
   radiusKm?: number = 3;
 }

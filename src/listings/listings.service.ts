@@ -20,10 +20,24 @@ export class ListingsService {
 
   // A-1. 폐기 예정 품목 등록
   async create(dto: CreateListingDto) {
-    if (dto.pickupEnd <= new Date()) {
+    const now = new Date();
+
+    if (dto.pickupStart >= dto.pickupEnd) {
+      throw new BadRequestException(
+        '픽업 시작 시간은 종료 시간보다 빨라야 합니다.',
+      );
+    }
+
+    if (dto.pickupEnd <= now) {
       throw new BadRequestException('픽업 종료 시간은 현재 이후여야 합니다.');
     }
-    return this.listingRepo.save(this.listingRepo.create(dto));
+
+    return this.listingRepo.save(
+      this.listingRepo.create({
+        ...dto,
+        status: ListingStatus.OPEN,
+      }),
+    );
   }
 
   // A-2. 반경 기반 기부 피드 (하버사인 거리 계산, 최신순)
@@ -31,7 +45,7 @@ export class ListingsService {
     await this.expireOverdue();
     const facility = await this.facilitiesService.findOne(facilityId);
 
-    return this.listingRepo
+    const query = this.listingRepo
       .createQueryBuilder('listing')
       .innerJoinAndSelect('listing.store', 'store')
       .addSelect(
@@ -45,14 +59,23 @@ export class ListingsService {
       .where('listing.status = :status', { status: ListingStatus.OPEN })
       .having('distanceKm <= :radiusKm')
       .setParameters({ lat: facility.lat, lng: facility.lng, radiusKm })
-      .orderBy('listing.createdAt', 'DESC')
-      .getRawAndEntities()
-      .then(({ raw, entities }) =>
-        entities.map((listing, i) => ({
-          ...listing,
-          distanceKm: Number(Number(raw[i].distanceKm).toFixed(2)),
-        })),
-      );
+      .orderBy('listing.createdAt', 'DESC');
+
+    const { raw, entities } = await query.getRawAndEntities();
+
+    return entities.map((listing, index) => {
+      const item = raw[index] ?? {};
+      return {
+        ...listing,
+        distanceKm: Number(Number(item.distanceKm).toFixed(2)),
+        remainingMinutes: Math.max(
+          0,
+          Math.ceil(
+            (new Date(listing.pickupEnd).getTime() - Date.now()) / 60000,
+          ),
+        ),
+      };
+    });
   }
 
   async findOne(id: number) {
