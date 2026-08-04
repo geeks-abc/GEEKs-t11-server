@@ -182,22 +182,29 @@ describe('취소·내역·프로필 (e2e)', () => {
   });
 
   describe('프로필 (헤더 표시용)', () => {
-    it('me 응답에 연결된 가게 프로필 포함', async () => {
-      await request(app.getHttpServer()).post('/api/auth/signup').send({
-        email: 'store@demo.com',
-        password: 'password123',
-        role: 'STORE',
-        storeId,
-      });
-      const login = await request(app.getHttpServer())
-        .post('/api/auth/login')
-        .send({ email: 'store@demo.com', password: 'password123' });
+    it('전화 가입 계정의 me 응답에 가게 프로필 포함', async () => {
+      const phone = '010-9090-8080';
+      const req = await request(app.getHttpServer())
+        .post('/api/auth/phone/request')
+        .send({ phone });
+      const verify = await request(app.getHttpServer())
+        .post('/api/auth/phone/verify')
+        .send({ phone, code: req.body.demoCode });
+      const signup = await request(app.getHttpServer())
+        .post('/api/auth/phone/signup')
+        .send({
+          signupToken: verify.body.signupToken,
+          nickname: '전화가입 빵집',
+          role: 'STORE',
+          address: '서울 마포구 양화로 1',
+        });
 
       const me = await request(app.getHttpServer())
         .get('/api/auth/me')
-        .set('Authorization', `Bearer ${login.body.accessToken}`);
+        .set('Authorization', `Bearer ${signup.body.accessToken}`);
       expect(me.status).toBe(200);
-      expect(me.body.store.name).toBe('테스트 베이커리');
+      expect(me.body.store.name).toBe('전화가입 빵집');
+      expect(me.body.store.address).toBe('서울 마포구 양화로 1');
       expect(me.body.facility).toBeNull();
     });
   });

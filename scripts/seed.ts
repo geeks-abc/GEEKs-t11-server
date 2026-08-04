@@ -7,7 +7,6 @@
  */
 import { NestFactory } from '@nestjs/core';
 import { DataSource } from 'typeorm';
-import * as bcrypt from 'bcryptjs';
 import { randomUUID } from 'crypto';
 import { AppModule } from '../src/app.module';
 import { Store } from '../src/stores/entities/store.entity';
@@ -99,22 +98,21 @@ async function main() {
     },
   ]);
 
-  // ── 데모 계정 ─────────────────────────────────────────
-  const password = await bcrypt.hash('password123', 10);
+  // ── 데모 계정 (전화번호 인증 — 인증번호는 앱에서 데모 코드로 표시) ──
   await db.getRepository(User).save([
     {
-      email: 'store@demo.com',
-      password,
+      phone: '01011112222',
+      nickname: stores[0].name,
       role: UserRole.STORE,
       storeId: stores[0].id,
     },
     {
-      email: 'facility@demo.com',
-      password,
+      phone: '01033334444',
+      nickname: facilities[0].name,
       role: UserRole.FACILITY,
       facilityId: facilities[0].id,
     },
-    { email: 'admin@demo.com', password, role: UserRole.ADMIN },
+    { phone: '01055556666', nickname: '이음 운영팀', role: UserRole.ADMIN },
   ]);
 
   const listingRepo = db.getRepository(Listing);
@@ -259,10 +257,10 @@ async function main() {
   console.log('시딩 완료');
   console.log(`  가게 ${stores.length} · 시설 ${facilities.length} · 완료 기부 ${completedTotal}건 (7일치)`);
   console.log('  OPEN 3 · MATCHED 1 (QR 데모용) · EXPIRED 1 · CANCELLED 1');
-  console.log('  데모 계정 (비밀번호 공통: password123)');
-  console.log('    가게   store@demo.com    → 어니언 베이커리 홍대점');
-  console.log('    시설   facility@demo.com → 마포 푸드뱅크');
-  console.log('    관리자 admin@demo.com');
+  console.log('  데모 계정 (전화번호 인증 — 코드는 앱에 표시)');
+  console.log('    가게   010-1111-2222 → 어니언 베이커리 홍대점');
+  console.log('    시설   010-3333-4444 → 마포 푸드뱅크');
+  console.log('    관리자 010-5555-6666 → 이음 운영팀');
   console.log(`  QR 데모 매칭: matchId=${inProgressMatch.id}, qrToken=${inProgressMatch.qrToken}`);
 
   await app.close();

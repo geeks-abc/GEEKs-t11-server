@@ -74,6 +74,8 @@ describe('전화번호 인증 (e2e)', () => {
         signupToken: verify.body.signupToken,
         nickname: '오늘의 빵집',
         role: 'STORE',
+        address: '서울 마포구 양화로 45',
+        photoUrl: 'http://localhost:3000/uploads/demo.png',
       });
     expect(signup.status).toBe(201);
     expect(signup.body.accessToken).toBeDefined();
@@ -85,6 +87,8 @@ describe('전화번호 인증 (e2e)', () => {
       .get('/api/auth/me')
       .set('Authorization', `Bearer ${signup.body.accessToken}`);
     expect(me.body.store.name).toBe('오늘의 빵집');
+    expect(me.body.store.address).toBe('서울 마포구 양화로 45');
+    expect(me.body.store.photoUrl).toBe('http://localhost:3000/uploads/demo.png');
     expect(me.body.phone).toBe('01098765432');
   });
 
@@ -111,6 +115,10 @@ describe('전화번호 인증 (e2e)', () => {
         signupToken: verify.body.signupToken,
         nickname: '행복 지역아동센터',
         role: 'FACILITY',
+        facilityType: '지역아동센터',
+        address: '서울 마포구 잔다리로 10',
+        addressDetail: '3층',
+        contactPhone: '02-777-8888',
       });
     expect(signup.status).toBe(201);
 
@@ -118,6 +126,9 @@ describe('전화번호 인증 (e2e)', () => {
       .get('/api/auth/me')
       .set('Authorization', `Bearer ${signup.body.accessToken}`);
     expect(me.body.facility.name).toBe('행복 지역아동센터');
+    expect(me.body.facility.type).toBe('지역아동센터');
+    expect(me.body.facility.address).toBe('서울 마포구 잔다리로 10 3층');
+    expect(me.body.facility.phone).toBe('02-777-8888');
     expect(me.body.store).toBeNull();
   });
 
@@ -132,15 +143,4 @@ describe('전화번호 인증 (e2e)', () => {
     expect(reuse.status).toBe(401);
   });
 
-  it('기존 이메일 로그인은 그대로 동작', async () => {
-    await request(app.getHttpServer()).post('/api/auth/signup').send({
-      email: 'legacy@demo.com',
-      password: 'password123',
-      role: 'ADMIN',
-    });
-    const login = await request(app.getHttpServer())
-      .post('/api/auth/login')
-      .send({ email: 'legacy@demo.com', password: 'password123' });
-    expect(login.status).toBe(201);
-  });
 });

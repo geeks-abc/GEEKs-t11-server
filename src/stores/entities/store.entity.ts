@@ -21,6 +21,10 @@ export class Store {
   @Column({ nullable: true })
   phone: string;
 
+  // 가게 대표 사진 (온보딩에서 업로드)
+  @Column({ nullable: true, type: 'varchar' })
+  photoUrl: string | null;
+
   @OneToMany(() => Listing, (listing) => listing.store)
   listings: Listing[];
 }
