@@ -12,6 +12,8 @@ import { Store } from '../stores/entities/store.entity';
 import { Facility } from '../facilities/entities/facility.entity';
 import { SignupDto } from './dto/signup.dto';
 import { LoginDto } from './dto/login.dto';
+import { PhoneSignupDto } from './dto/phone-auth.dto';
+import { UserRole } from '../common/enums';
 
 @Injectable()
 export class AuthService {
@@ -39,13 +41,128 @@ export class AuthService {
   async login(dto: LoginDto) {
     const user = await this.userRepo.findOne({
       where: { email: dto.email },
-      select: ['id', 'email', 'password', 'role', 'storeId', 'facilityId'],
+      select: [
+        'id',
+        'email',
+        'password',
+        'phone',
+        'nickname',
+        'role',
+        'storeId',
+        'facilityId',
+      ],
     });
-    if (!user || !(await bcrypt.compare(dto.password, user.password))) {
+    if (
+      !user ||
+      !user.password ||
+      !(await bcrypt.compare(dto.password, user.password))
+    ) {
       throw new UnauthorizedException(
         '이메일 또는 비밀번호가 올바르지 않습니다.',
       );
     }
+    return this.issueToken(user);
+  }
+
+  // ── 전화번호 인증 (SMS 실연동 없이 데모 코드 반환) ──────
+  private readonly phoneCodes = new Map<
+    string,
+    { code: string; expiresAt: number }
+  >();
+
+  private normalizePhone(phone: string) {
+    const digits = phone.replace(/[^0-9]/g, '');
+    if (!/^01[016789][0-9]{7,8}$/.test(digits)) {
+      throw new UnauthorizedException('올바른 휴대폰 번호를 입력해주세요.');
+    }
+    return digits;
+  }
+
+  requestPhoneCode(phone: string) {
+    const normalized = this.normalizePhone(phone);
+    const code = String(Math.floor(100000 + Math.random() * 900000));
+    this.phoneCodes.set(normalized, {
+      code,
+      expiresAt: Date.now() + 5 * 60 * 1000,
+    });
+    // 데모: SMS 대신 응답으로 코드 반환 (실서비스에서는 제거)
+    return { demoCode: code, expiresInSec: 300 };
+  }
+
+  async verifyPhone(phone: string, code: string) {
+    const normalized = this.normalizePhone(phone);
+    const entry = this.phoneCodes.get(normalized);
+    if (!entry || entry.expiresAt < Date.now() || entry.code !== code) {
+      throw new UnauthorizedException('인증번호가 올바르지 않습니다.');
+    }
+    this.phoneCodes.delete(normalized);
+
+    const user = await this.userRepo.findOne({
+      where: { phone: normalized },
+    });
+    if (user) {
+      return { isNew: false as const, ...this.issueToken(user) };
+    }
+    // 신규: 닉네임·유형 입력 단계로 (10분 내 가입 완료)
+    const signupToken = this.jwtService.sign(
+      { phone: normalized, purpose: 'phone-signup' },
+      { expiresIn: '10m' },
+    );
+    return { isNew: true as const, signupToken };
+  }
+
+  async phoneSignup(dto: PhoneSignupDto) {
+    let payload: { phone: string; purpose: string };
+    try {
+      payload = this.jwtService.verify(dto.signupToken);
+    } catch {
+      throw new UnauthorizedException(
+        '가입 세션이 만료됐어요. 인증을 다시 진행해주세요.',
+      );
+    }
+    if (payload.purpose !== 'phone-signup') {
+      throw new UnauthorizedException('유효하지 않은 가입 토큰입니다.');
+    }
+    const exists = await this.userRepo.findOne({
+      where: { phone: payload.phone },
+    });
+    if (exists) throw new ConflictException('이미 가입된 번호입니다.');
+
+    // 닉네임을 상호/기관명으로 사용해 프로필 자동 생성 (위치는 데모 기본값)
+    let storeId: number | undefined;
+    let facilityId: number | undefined;
+    if (dto.role === 'STORE') {
+      const store = await this.storeRepo.save(
+        this.storeRepo.create({
+          name: dto.nickname,
+          address: '주소 미설정',
+          lat: 37.5563,
+          lng: 126.9236,
+        }),
+      );
+      storeId = store.id;
+    } else {
+      const facility = await this.facilityRepo.save(
+        this.facilityRepo.create({
+          name: dto.nickname,
+          type: '복지시설',
+          address: '주소 미설정',
+          lat: 37.5547,
+          lng: 126.9106,
+        }),
+      );
+      facilityId = facility.id;
+    }
+
+    const user = await this.userRepo.save(
+      this.userRepo.create({
+        phone: payload.phone,
+        nickname: dto.nickname,
+        role: dto.role as UserRole,
+        storeId,
+        facilityId,
+      }),
+    );
     return this.issueToken(user);
   }
 
@@ -68,7 +185,9 @@ export class AuthService {
   private issueToken(user: User) {
     const payload = {
       sub: user.id,
-      email: user.email,
+      email: user.email ?? null,
+      phone: user.phone ?? null,
+      nickname: user.nickname ?? null,
       role: user.role,
       storeId: user.storeId ?? null,
       facilityId: user.facilityId ?? null,
