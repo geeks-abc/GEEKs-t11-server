@@ -36,7 +36,7 @@ export class DonationsService implements OnModuleDestroy {
 
     const { match } = donation;
     return {
-      serialNumber: `GEEKS-${donation.completedAt.getFullYear()}-${String(donation.id).padStart(6, '0')}`,
+      serialNumber: `IEUM-${donation.completedAt.getFullYear()}-${String(donation.id).padStart(6, '0')}`,
       donor: {
         name: match.listing.store.name,
         address: match.listing.store.address,

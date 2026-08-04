@@ -85,7 +85,7 @@ describe('B-1 기부확인서 (e2e)', () => {
       `/api/donations/${donationId}/certificate`,
     );
     expect(res.status).toBe(200);
-    expect(res.body.serialNumber).toMatch(/^GEEKS-\d{4}-\d{6}$/);
+    expect(res.body.serialNumber).toMatch(/^IEUM-\d{4}-\d{6}$/);
     expect(res.body.donor.name).toBe('테스트 베이커리');
     expect(res.body.beneficiary.name).toBe('테스트 푸드뱅크');
     expect(res.body.itemName).toBe('소금빵');

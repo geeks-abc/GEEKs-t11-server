@@ -11,9 +11,10 @@ async function bootstrap() {
 
   // API 명세서: http://localhost:3000/docs (JSON: /docs-json)
   const config = new DocumentBuilder()
-    .setTitle('GEEKs 푸드브릿지 API')
+    .setTitle('이음 API')
     .setDescription(
-      '소상공인 폐기 예정 식품 × 복지시설 자동 매칭 플랫폼 API.\n\n' +
+      '이음 — 버려지는 음식과 부족한 복지시설을 잇는 플랫폼.\n' +
+        '소상공인 폐기 예정 식품 × 복지시설 자동 매칭 API.\n\n' +
         '상태 흐름: OPEN → MATCHED → COMPLETED / EXPIRED',
     )
     .setVersion('1.0')

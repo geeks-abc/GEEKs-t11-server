@@ -103,7 +103,7 @@ export const NOTIFICATION_EXAMPLE = {
 };
 
 export const CERTIFICATE_EXAMPLE = {
-  serialNumber: 'GEEKS-2026-000003',
+  serialNumber: 'IEUM-2026-000003',
   donor: {
     name: '어니언 베이커리 홍대점',
     address: '서울 마포구 양화로 12',
