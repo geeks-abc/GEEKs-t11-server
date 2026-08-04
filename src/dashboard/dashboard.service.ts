@@ -28,7 +28,7 @@ export class DashboardService {
         facilityCount: string;
       }>();
 
-    // 일별 추이 (건수·kg)
+    // 일별 추이 (건수·kg·CO2e)
     const daily = await this.donationRepo
       .createQueryBuilder('donation')
       .select('DATE(donation.completedAt)', 'date')
@@ -45,11 +45,15 @@ export class DashboardService {
       totalCo2eKg: Number((totalWeightKg * CO2E_PER_KG).toFixed(2)),
       storeCount: Number(totals?.storeCount ?? 0),
       facilityCount: Number(totals?.facilityCount ?? 0),
-      daily: daily.map((row) => ({
-        date: row.date,
-        count: Number(row.count),
-        weightKg: Number(row.weightKg),
-      })),
+      daily: daily.map((row) => {
+        const weightKg = Number(row.weightKg ?? 0);
+        return {
+          date: row.date,
+          count: Number(row.count),
+          weightKg,
+          co2eKg: Number((weightKg * CO2E_PER_KG).toFixed(2)),
+        };
+      }),
     };
   }
 }
