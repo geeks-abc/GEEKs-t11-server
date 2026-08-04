@@ -148,55 +148,43 @@ export class AuthService {
     return { ...user, store, facility };
   }
 
-  async verifyPassword(userId: number, currentPassword: string) {
-    const user = await this.userRepo.findOne({
-      where: { id: userId },
-      select: ['id', 'email', 'password', 'role', 'storeId', 'facilityId'],
-    });
+  // 마이페이지 프로필 수정 — 본인 확인은 클라이언트의 인증번호 재검증 + JWT로 처리
+  async updateProfile(userId: number, dto: UpdateProfileDto) {
+    const user = await this.userRepo.findOne({ where: { id: userId } });
     if (!user) throw new UnauthorizedException('인증이 필요합니다.');
 
-    const ok = await bcrypt.compare(currentPassword, user.password);
-    if (!ok) {
-      throw new UnauthorizedException('현재 비밀번호가 올바르지 않습니다.');
+    // 상호/기관명은 유저 닉네임과 동기화
+    if (dto.name) {
+      await this.userRepo.update(user.id, { nickname: dto.name });
     }
 
-    return { ok: true };
-  }
-
-  async updateProfile(userId: number, dto: UpdateProfileDto) {
-    await this.verifyPassword(userId, dto.currentPassword);
-
-    const user = await this.userRepo.findOne({
-      where: { id: userId },
-      select: ['id', 'email', 'password', 'role', 'storeId', 'facilityId'],
-    });
-    if (!user) throw new UnauthorizedException('인증이 필요합니다.');
-
-    if (user.role === 'STORE' && user.storeId) {
-      const store = await this.storeRepo.findOne({ where: { id: user.storeId } });
-      if (!store) throw new NotFoundException('연결된 가게가 없습니다.');
-
-      const merged = this.storeRepo.merge(store, {
-        name: dto.name ?? store.name,
-        address: dto.address ?? store.address,
-        phone: dto.phone ?? store.phone,
+    if (user.role === UserRole.STORE && user.storeId) {
+      const store = await this.storeRepo.findOne({
+        where: { id: user.storeId },
       });
-      await this.storeRepo.save(merged);
+      if (!store) throw new NotFoundException('연결된 가게가 없습니다.');
+      await this.storeRepo.save(
+        this.storeRepo.merge(store, {
+          name: dto.name ?? store.name,
+          address: dto.address ?? store.address,
+          phone: dto.phone ?? store.phone,
+        }),
+      );
       return this.me(userId);
     }
 
-    if (user.role === 'FACILITY' && user.facilityId) {
+    if (user.role === UserRole.FACILITY && user.facilityId) {
       const facility = await this.facilityRepo.findOne({
         where: { id: user.facilityId },
       });
       if (!facility) throw new NotFoundException('연결된 시설이 없습니다.');
-
-      const merged = this.facilityRepo.merge(facility, {
-        name: dto.name ?? facility.name,
-        address: dto.address ?? facility.address,
-        phone: dto.phone ?? facility.phone,
-      });
-      await this.facilityRepo.save(merged);
+      await this.facilityRepo.save(
+        this.facilityRepo.merge(facility, {
+          name: dto.name ?? facility.name,
+          address: dto.address ?? facility.address,
+          phone: dto.phone ?? facility.phone,
+        }),
+      );
       return this.me(userId);
     }
 
