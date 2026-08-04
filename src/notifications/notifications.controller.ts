@@ -6,7 +6,13 @@ import {
   Patch,
   Query,
 } from '@nestjs/common';
-import { ApiOperation, ApiQuery, ApiTags } from '@nestjs/swagger';
+import {
+  ApiOkResponse,
+  ApiOperation,
+  ApiQuery,
+  ApiTags,
+} from '@nestjs/swagger';
+import { NOTIFICATION_EXAMPLE } from '../common/swagger-examples';
 import { NotificationsService } from './notifications.service';
 import { RecipientType } from '../common/enums';
 
@@ -22,6 +28,7 @@ export class NotificationsController {
   })
   @ApiQuery({ name: 'recipientType', enum: RecipientType })
   @ApiQuery({ name: 'recipientId', type: Number })
+  @ApiOkResponse({ schema: { example: [NOTIFICATION_EXAMPLE] } })
   @Get()
   findByRecipient(
     @Query('recipientType') recipientType: RecipientType,
@@ -34,6 +41,7 @@ export class NotificationsController {
   }
 
   @ApiOperation({ summary: '알림 읽음 처리' })
+  @ApiOkResponse({ schema: { example: { ok: true } } })
   @Patch(':id/read')
   markRead(@Param('id', ParseIntPipe) id: number) {
     return this.notificationsService.markRead(id);

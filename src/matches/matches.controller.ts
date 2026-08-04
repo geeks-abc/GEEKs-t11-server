@@ -6,7 +6,17 @@ import {
   ParseIntPipe,
   Post,
 } from '@nestjs/common';
-import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
+import {
+  ApiCreatedResponse,
+  ApiOkResponse,
+  ApiOperation,
+  ApiResponse,
+  ApiTags,
+} from '@nestjs/swagger';
+import {
+  COMPLETE_RESPONSE_EXAMPLE,
+  MATCH_EXAMPLE,
+} from '../common/swagger-examples';
 import { MatchesService } from './matches.service';
 import { CreateMatchDto } from './dto/create-match.dto';
 import { CompleteMatchDto } from './dto/complete-match.dto';
@@ -22,6 +32,7 @@ export class MatchesController {
     description:
       'OPEN 품목을 선착순 1개 시설로 확정 (동시 신청 경합 방지). 확정 시 양측에 MATCHED 알림, 매칭 건별 1회용 QR 토큰 발급.',
   })
+  @ApiCreatedResponse({ schema: { example: MATCH_EXAMPLE } })
   @ApiResponse({ status: 409, description: '마감된 기부입니다.' })
   @Post()
   apply(@Body() dto: CreateMatchDto) {
@@ -30,6 +41,7 @@ export class MatchesController {
 
   // S-03/S-05 매칭 상세 (QR 토큰 포함)
   @ApiOperation({ summary: '매칭 상세 (QR 토큰·픽업 정보 포함, S-03/S-05)' })
+  @ApiOkResponse({ schema: { example: MATCH_EXAMPLE } })
   @Get(':id')
   findOne(@Param('id', ParseIntPipe) id: number) {
     return this.matchesService.findOne(id);
@@ -41,6 +53,7 @@ export class MatchesController {
     description:
       '가게 화면의 QR 토큰을 시설이 스캔해 COMPLETED 처리. 완료 시 기부 원장(donations) 기록 + 양측 COMPLETED 알림.',
   })
+  @ApiCreatedResponse({ schema: { example: COMPLETE_RESPONSE_EXAMPLE } })
   @ApiResponse({ status: 401, description: '유효하지 않은 QR 토큰' })
   @ApiResponse({ status: 409, description: '이미 인수 완료된 기부' })
   @Post(':id/complete')

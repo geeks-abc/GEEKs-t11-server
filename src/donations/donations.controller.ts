@@ -7,7 +7,17 @@ import {
   Res,
 } from '@nestjs/common';
 import type { Response } from 'express';
-import { ApiOperation, ApiProduces, ApiQuery, ApiTags } from '@nestjs/swagger';
+import {
+  ApiOkResponse,
+  ApiOperation,
+  ApiProduces,
+  ApiQuery,
+  ApiTags,
+} from '@nestjs/swagger';
+import {
+  CERTIFICATE_EXAMPLE,
+  DONATION_EXAMPLE,
+} from '../common/swagger-examples';
 import { DonationsService } from './donations.service';
 
 @ApiTags('기부 내역')
@@ -18,6 +28,7 @@ export class DonationsController {
   // 가게의 기부 완료 내역 (S-06)
   @ApiOperation({ summary: '가게의 기부 완료 내역 (S-06)' })
   @ApiQuery({ name: 'storeId', type: Number })
+  @ApiOkResponse({ schema: { example: [DONATION_EXAMPLE] } })
   @Get()
   findByStore(@Query('storeId', ParseIntPipe) storeId: number) {
     return this.donationsService.findByStore(storeId);
@@ -28,6 +39,7 @@ export class DonationsController {
     summary: '기부확인서 데이터 (B-1 미리보기)',
     description: '일련번호·기부자·수혜시설·품목·수량·환산중량·인수일시',
   })
+  @ApiOkResponse({ schema: { example: CERTIFICATE_EXAMPLE } })
   @Get(':id/certificate')
   certificate(@Param('id', ParseIntPipe) id: number) {
     return this.donationsService.certificate(id);

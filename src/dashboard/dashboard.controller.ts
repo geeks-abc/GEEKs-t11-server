@@ -1,5 +1,6 @@
 import { Controller, Get } from '@nestjs/common';
-import { ApiOperation, ApiTags } from '@nestjs/swagger';
+import { ApiOkResponse, ApiOperation, ApiTags } from '@nestjs/swagger';
+import { IMPACT_EXAMPLE } from '../common/swagger-examples';
 import { DashboardService } from './dashboard.service';
 
 @ApiTags('대시보드')
@@ -13,6 +14,7 @@ export class DashboardController {
     description:
       '누적 기부 건수·감축량(kg)·CO₂e 환산·참여 가게/시설 수·일별 추이. 환산 규칙: 품목 키워드별 평균 중량 × 수량, CO₂e 계수 2.5/kg.',
   })
+  @ApiOkResponse({ schema: { example: IMPACT_EXAMPLE } })
   @Get('impact')
   impact() {
     return this.dashboardService.impact();
