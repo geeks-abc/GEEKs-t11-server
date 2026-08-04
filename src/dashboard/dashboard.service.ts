@@ -41,7 +41,7 @@ export class DashboardService {
     const totalWeightKg = Number(totals?.totalWeightKg ?? 0);
     return {
       totalDonations: Number(totals?.totalDonations ?? 0),
-      totalWeightKg,
+      totalWeightKg: Number(totalWeightKg.toFixed(2)),
       totalCo2eKg: Number((totalWeightKg * CO2E_PER_KG).toFixed(2)),
       storeCount: Number(totals?.storeCount ?? 0),
       facilityCount: Number(totals?.facilityCount ?? 0),
@@ -50,7 +50,7 @@ export class DashboardService {
         return {
           date: row.date,
           count: Number(row.count),
-          weightKg,
+          weightKg: Number(weightKg.toFixed(2)),
           co2eKg: Number((weightKg * CO2E_PER_KG).toFixed(2)),
         };
       }),
