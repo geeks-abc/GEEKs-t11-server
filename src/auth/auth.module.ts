@@ -3,13 +3,15 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { JwtModule } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import { User } from './entities/user.entity';
+import { Store } from '../stores/entities/store.entity';
+import { Facility } from '../facilities/entities/facility.entity';
 import { AuthService } from './auth.service';
 import { AuthController } from './auth.controller';
 import { JwtAuthGuard } from './jwt-auth.guard';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([User]),
+    TypeOrmModule.forFeature([User, Store, Facility]),
     JwtModule.registerAsync({
       global: true,
       inject: [ConfigService],

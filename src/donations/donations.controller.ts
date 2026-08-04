@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   Controller,
   Get,
   Param,
@@ -25,13 +26,29 @@ import { DonationsService } from './donations.service';
 export class DonationsController {
   constructor(private readonly donationsService: DonationsService) {}
 
-  // 가게의 기부 완료 내역 (S-06)
-  @ApiOperation({ summary: '가게의 기부 완료 내역 (S-06)' })
-  @ApiQuery({ name: 'storeId', type: Number })
+  // 완료 내역: 가게의 기부 내역(S-06) 또는 시설의 수령 내역
+  @ApiOperation({
+    summary: '기부/수령 완료 내역',
+    description:
+      'storeId → 가게의 기부 내역 (S-06, 확인서 재다운로드용), facilityId → 시설의 수령 내역. 둘 중 하나 필수.',
+  })
+  @ApiQuery({ name: 'storeId', type: Number, required: false })
+  @ApiQuery({ name: 'facilityId', type: Number, required: false })
   @ApiOkResponse({ schema: { example: [DONATION_EXAMPLE] } })
   @Get()
-  findByStore(@Query('storeId', ParseIntPipe) storeId: number) {
-    return this.donationsService.findByStore(storeId);
+  findAll(
+    @Query('storeId') storeId?: string,
+    @Query('facilityId') facilityId?: string,
+  ) {
+    if (!storeId && !facilityId) {
+      throw new BadRequestException(
+        'storeId 또는 facilityId 중 하나는 필수입니다.',
+      );
+    }
+    return this.donationsService.findAll({
+      storeId: storeId ? Number(storeId) : undefined,
+      facilityId: facilityId ? Number(facilityId) : undefined,
+    });
   }
 
   // B-1. 기부확인서 데이터 (미리보기 화면용)

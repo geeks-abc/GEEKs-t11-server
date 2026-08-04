@@ -18,9 +18,15 @@ export class DonationsService implements OnModuleDestroy {
     await this.browser?.close();
   }
 
-  findByStore(storeId: number) {
+  // 가게(storeId) 또는 시설(facilityId) 기준 완료 내역
+  findAll(filter: { storeId?: number; facilityId?: number }) {
     return this.donationRepo.find({
-      where: { match: { listing: { storeId } } },
+      where: {
+        match: {
+          ...(filter.storeId && { listing: { storeId: filter.storeId } }),
+          ...(filter.facilityId && { facilityId: filter.facilityId }),
+        },
+      },
       relations: { match: { listing: { store: true }, facility: true } },
       order: { completedAt: 'DESC' },
     });

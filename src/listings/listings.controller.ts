@@ -4,6 +4,7 @@ import {
   Get,
   Param,
   ParseIntPipe,
+  Patch,
   Post,
   Query,
 } from '@nestjs/common';
@@ -12,11 +13,13 @@ import {
   ApiOkResponse,
   ApiOperation,
   ApiQuery,
+  ApiResponse,
   ApiTags,
 } from '@nestjs/swagger';
 import { FEED_ITEM_EXAMPLE, LISTING_EXAMPLE } from '../common/swagger-examples';
 import { ListingsService } from './listings.service';
 import { CreateListingDto } from './dto/create-listing.dto';
+import { UpdateListingDto } from './dto/update-listing.dto';
 import { FeedQueryDto } from './dto/feed-query.dto';
 
 @ApiTags('품목')
@@ -62,5 +65,26 @@ export class ListingsController {
   @Get(':id')
   findOne(@Param('id', ParseIntPipe) id: number) {
     return this.listingsService.findOne(id);
+  }
+
+  @ApiOperation({
+    summary: '품목 수정 (A-1 보완)',
+    description: 'OPEN 상태에서만 가능. 수량·픽업 시간·사진 정정용.',
+  })
+  @ApiResponse({ status: 409, description: 'OPEN 상태가 아님' })
+  @Patch(':id')
+  update(@Param('id', ParseIntPipe) id: number, @Body() dto: UpdateListingDto) {
+    return this.listingsService.update(id, dto);
+  }
+
+  @ApiOperation({
+    summary: '품목 등록 취소 (A-1 보완)',
+    description:
+      'OPEN → CANCELLED. 매칭된 품목은 매칭 취소(POST /matches/:id/cancel)를 사용.',
+  })
+  @ApiResponse({ status: 409, description: 'OPEN 상태가 아님' })
+  @Post(':id/cancel')
+  cancel(@Param('id', ParseIntPipe) id: number) {
+    return this.listingsService.cancel(id);
   }
 }

@@ -153,4 +153,45 @@ export class MatchesService {
       facilityName: match.facility.name,
     };
   }
+
+  // A-3 보완. 매칭 취소 → 품목 다시 OPEN 복구 (인수 완료 전까지만)
+  async cancel(id: number) {
+    const match = await this.findOne(id);
+
+    await this.dataSource.transaction(async (manager) => {
+      // MATCHED 상태일 때만 되돌림 — COMPLETED 건은 취소 불가
+      const reopened = await manager.update(
+        Listing,
+        { id: match.listingId, status: ListingStatus.MATCHED },
+        { status: ListingStatus.OPEN },
+      );
+      if (reopened.affected === 0) {
+        throw new ConflictException(
+          '이미 인수 완료된 기부는 취소할 수 없습니다.',
+        );
+      }
+      await manager.delete(Match, { id: match.id });
+    });
+
+    // 취소 알림 (양측)
+    const payload = {
+      listingId: match.listingId,
+      itemName: match.listing.itemName,
+      facilityName: match.facility.name,
+    };
+    await this.notificationsService.notify(
+      RecipientType.STORE,
+      match.listing.storeId,
+      'MATCH_CANCELLED',
+      payload,
+    );
+    await this.notificationsService.notify(
+      RecipientType.FACILITY,
+      match.facilityId,
+      'MATCH_CANCELLED',
+      payload,
+    );
+
+    return { ok: true, listingId: match.listingId, status: 'OPEN' };
+  }
 }
