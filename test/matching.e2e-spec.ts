@@ -8,7 +8,7 @@ import { AppModule } from '../src/app.module';
 
 /**
  * A-3 매칭 e2e
- * 실행 전제: MySQL에 geeks_test DB 존재 (docker-compose.test.yml 참고)
+ * 실행 전제: MySQL에 geeks_test DB 존재 (docker compose up -d 로 자동 생성)
  */
 describe('A-3 매칭 (e2e)', () => {
   let app: INestApplication;
