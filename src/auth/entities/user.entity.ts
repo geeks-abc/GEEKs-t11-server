@@ -11,11 +11,19 @@ export class User {
   @PrimaryGeneratedColumn()
   id: number;
 
-  @Column({ unique: true })
-  email: string;
+  // 이메일 로그인 계정용 (전화번호 가입 시 null)
+  @Column({ unique: true, nullable: true, type: 'varchar' })
+  email: string | null;
 
-  @Column({ select: false })
-  password: string;
+  @Column({ select: false, nullable: true, type: 'varchar' })
+  password: string | null;
+
+  // 전화번호 가입 계정용 (숫자만 저장, 예: 01012345678)
+  @Column({ unique: true, nullable: true, type: 'varchar' })
+  phone: string | null;
+
+  @Column({ nullable: true, type: 'varchar' })
+  nickname: string | null;
 
   @Column({ type: 'enum', enum: UserRole })
   role: UserRole;
