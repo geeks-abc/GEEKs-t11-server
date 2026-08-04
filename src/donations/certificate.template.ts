@@ -84,7 +84,7 @@ export function renderCertificateHtml(data: CertificateData): string {
     </div>
 
     <div class="date">${formatDate(data.completedAt)}</div>
-    <div class="issuer">GEEKs 푸드브릿지<span class="stamp">인</span></div>
+    <div class="issuer">GEEKs 이음<span class="stamp">인</span></div>
 
     <div class="footnote">
       본 확인서는 해커톤 데모용 목업이며, 공식 발급기관과 연동되지 않았습니다.
