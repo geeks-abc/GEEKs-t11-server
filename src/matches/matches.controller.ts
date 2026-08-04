@@ -5,14 +5,17 @@ import {
   Param,
   ParseIntPipe,
   Post,
+  Query,
 } from '@nestjs/common';
 import {
   ApiCreatedResponse,
   ApiOkResponse,
   ApiOperation,
+  ApiQuery,
   ApiResponse,
   ApiTags,
 } from '@nestjs/swagger';
+import { ListingStatus } from '../common/enums';
 import {
   COMPLETE_RESPONSE_EXAMPLE,
   MATCH_EXAMPLE,
@@ -37,6 +40,25 @@ export class MatchesController {
   @Post()
   apply(@Body() dto: CreateMatchDto) {
     return this.matchesService.apply(dto.listingId, dto.facilityId);
+  }
+
+  // 시설의 매칭 목록 (S-05 진입점 — 새로고침 후에도 진행중 픽업 찾기)
+  @ApiOperation({
+    summary: '시설의 매칭 목록',
+    description:
+      '시설이 신청한 매칭 목록 (픽업 주소·시간 포함). status=MATCHED로 진행중만 필터 가능.',
+  })
+  @ApiQuery({ name: 'facilityId', type: Number })
+  @ApiQuery({ name: 'status', enum: ListingStatus, required: false })
+  @ApiOkResponse({
+    schema: { example: [{ ...MATCH_EXAMPLE, facility: undefined }] },
+  })
+  @Get()
+  findByFacility(
+    @Query('facilityId', ParseIntPipe) facilityId: number,
+    @Query('status') status?: ListingStatus,
+  ) {
+    return this.matchesService.findByFacility(facilityId, status);
   }
 
   // S-03/S-05 매칭 상세 (QR 토큰 포함)

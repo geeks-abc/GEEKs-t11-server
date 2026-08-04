@@ -79,4 +79,20 @@ export class NotificationsService {
     await this.notificationRepo.update(id, { read: true });
     return { ok: true };
   }
+
+  // 벨 아이콘 뱃지용 — 목록 폴링보다 가벼움
+  async unreadCount(recipientType: RecipientType, recipientId: number) {
+    const count = await this.notificationRepo.count({
+      where: { recipientType, recipientId, read: false },
+    });
+    return { count };
+  }
+
+  async markAllRead(recipientType: RecipientType, recipientId: number) {
+    const result = await this.notificationRepo.update(
+      { recipientType, recipientId, read: false },
+      { read: true },
+    );
+    return { ok: true, updated: result.affected ?? 0 };
+  }
 }

@@ -40,6 +40,30 @@ export class NotificationsController {
     );
   }
 
+  @ApiOperation({ summary: '읽지 않은 알림 개수 (벨 뱃지용)' })
+  @ApiQuery({ name: 'recipientType', enum: RecipientType })
+  @ApiQuery({ name: 'recipientId', type: Number })
+  @ApiOkResponse({ schema: { example: { count: 2 } } })
+  @Get('unread-count')
+  unreadCount(
+    @Query('recipientType') recipientType: RecipientType,
+    @Query('recipientId', ParseIntPipe) recipientId: number,
+  ) {
+    return this.notificationsService.unreadCount(recipientType, recipientId);
+  }
+
+  @ApiOperation({ summary: '알림 전체 읽음 처리' })
+  @ApiQuery({ name: 'recipientType', enum: RecipientType })
+  @ApiQuery({ name: 'recipientId', type: Number })
+  @ApiOkResponse({ schema: { example: { ok: true, updated: 3 } } })
+  @Patch('read-all')
+  markAllRead(
+    @Query('recipientType') recipientType: RecipientType,
+    @Query('recipientId', ParseIntPipe) recipientId: number,
+  ) {
+    return this.notificationsService.markAllRead(recipientType, recipientId);
+  }
+
   @ApiOperation({ summary: '알림 읽음 처리' })
   @ApiOkResponse({ schema: { example: { ok: true } } })
   @Patch(':id/read')

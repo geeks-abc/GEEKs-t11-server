@@ -93,6 +93,19 @@ export class MatchesService {
     return match;
   }
 
+  // 시설의 매칭 목록 (S-05 진입점) — status로 진행중(MATCHED)만 필터 가능
+  async findByFacility(facilityId: number, status?: ListingStatus) {
+    await this.facilitiesService.findOne(facilityId);
+    return this.matchRepo.find({
+      where: {
+        facilityId,
+        ...(status && { listing: { status } }),
+      },
+      relations: { listing: { store: true } },
+      order: { matchedAt: 'DESC' },
+    });
+  }
+
   // A-4. QR 인수 확인 → COMPLETED + 기부 원장 기록
   async complete(id: number, qrToken: string) {
     const match = await this.findOne(id);

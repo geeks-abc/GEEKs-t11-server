@@ -219,6 +219,16 @@ async function main() {
     status: ListingStatus.EXPIRED,
   });
 
+  // CANCELLED 예시 1개 (상태 뱃지 UI 확인용)
+  await listingRepo.save({
+    storeId: stores[2].id,
+    itemName: '도시락',
+    quantity: 2,
+    pickupStart: new Date(now),
+    pickupEnd: new Date(now + 2 * HOUR),
+    status: ListingStatus.CANCELLED,
+  });
+
   // 알림 예시 (시설: 신규 등록 / 가게: 매칭 확정)
   await db.getRepository(Notification).save([
     {
@@ -248,7 +258,7 @@ async function main() {
   console.log('──────────────────────────────────');
   console.log('시딩 완료');
   console.log(`  가게 ${stores.length} · 시설 ${facilities.length} · 완료 기부 ${completedTotal}건 (7일치)`);
-  console.log('  OPEN 3 · MATCHED 1 (QR 데모용) · EXPIRED 1');
+  console.log('  OPEN 3 · MATCHED 1 (QR 데모용) · EXPIRED 1 · CANCELLED 1');
   console.log('  데모 계정 (비밀번호 공통: password123)');
   console.log('    가게   store@demo.com    → 어니언 베이커리 홍대점');
   console.log('    시설   facility@demo.com → 마포 푸드뱅크');
