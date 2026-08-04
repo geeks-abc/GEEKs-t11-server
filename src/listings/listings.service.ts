@@ -9,6 +9,7 @@ import { Listing } from './entities/listing.entity';
 import { CreateListingDto } from './dto/create-listing.dto';
 import { ListingStatus } from '../common/enums';
 import { FacilitiesService } from '../facilities/facilities.service';
+import { NotificationsService } from '../notifications/notifications.service';
 
 @Injectable()
 export class ListingsService {
@@ -16,6 +17,7 @@ export class ListingsService {
     @InjectRepository(Listing)
     private readonly listingRepo: Repository<Listing>,
     private readonly facilitiesService: FacilitiesService,
+    private readonly notificationsService: NotificationsService,
   ) {}
 
   // A-1. 폐기 예정 품목 등록
@@ -23,7 +25,18 @@ export class ListingsService {
     if (dto.pickupEnd <= new Date()) {
       throw new BadRequestException('픽업 종료 시간은 현재 이후여야 합니다.');
     }
-    return this.listingRepo.save(this.listingRepo.create(dto));
+    const saved = await this.listingRepo.save(this.listingRepo.create(dto));
+
+    // A-3. 반경 내 시설에 신규 등록 알림 (실패해도 등록은 성공 처리)
+    const listing = await this.listingRepo.findOneOrFail({
+      where: { id: saved.id },
+      relations: { store: true },
+    });
+    await this.notificationsService
+      .notifyNearbyFacilities(listing)
+      .catch(() => undefined);
+
+    return saved;
   }
 
   // A-2. 반경 기반 기부 피드 (하버사인 거리 계산, 최신순)

@@ -37,7 +37,9 @@ export class AuthService {
       select: ['id', 'email', 'password', 'role', 'storeId', 'facilityId'],
     });
     if (!user || !(await bcrypt.compare(dto.password, user.password))) {
-      throw new UnauthorizedException('이메일 또는 비밀번호가 올바르지 않습니다.');
+      throw new UnauthorizedException(
+        '이메일 또는 비밀번호가 올바르지 않습니다.',
+      );
     }
     return this.issueToken(user);
   }

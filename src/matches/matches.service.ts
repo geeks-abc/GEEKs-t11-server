@@ -5,13 +5,14 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { DataSource, Repository } from 'typeorm';
+import { DataSource, MoreThan, Repository } from 'typeorm';
 import { randomUUID } from 'crypto';
 import { Match } from './entities/match.entity';
 import { Listing } from '../listings/entities/listing.entity';
 import { Donation } from '../donations/entities/donation.entity';
 import { ListingStatus, RecipientType } from '../common/enums';
 import { NotificationsService } from '../notifications/notifications.service';
+import { FacilitiesService } from '../facilities/facilities.service';
 import { estimateWeightKg } from '../common/constants';
 
 @Injectable()
@@ -20,14 +21,26 @@ export class MatchesService {
     @InjectRepository(Match) private readonly matchRepo: Repository<Match>,
     private readonly dataSource: DataSource,
     private readonly notificationsService: NotificationsService,
+    private readonly facilitiesService: FacilitiesService,
   ) {}
 
   // A-3. 수령 신청 → 선착순 확정 (조건부 업데이트로 동시 신청 경합 방지)
   async apply(listingId: number, facilityId: number) {
+    await this.facilitiesService.findOne(facilityId);
+
+    const listingRepo = this.dataSource.getRepository(Listing);
+    const exists = await listingRepo.existsBy({ id: listingId });
+    if (!exists) throw new NotFoundException('품목을 찾을 수 없습니다.');
+
     const match = await this.dataSource.transaction(async (manager) => {
+      // OPEN이면서 픽업 시간이 남은 품목만 선점 가능 (만료 경과분 방어)
       const claimed = await manager.update(
         Listing,
-        { id: listingId, status: ListingStatus.OPEN },
+        {
+          id: listingId,
+          status: ListingStatus.OPEN,
+          pickupEnd: MoreThan(new Date()),
+        },
         { status: ListingStatus.MATCHED },
       );
       if (claimed.affected === 0) {
@@ -42,9 +55,10 @@ export class MatchesService {
       );
     });
 
-    const listing = await this.dataSource
-      .getRepository(Listing)
-      .findOneOrFail({ where: { id: listingId }, relations: { store: true } });
+    const listing = await listingRepo.findOneOrFail({
+      where: { id: listingId },
+      relations: { store: true },
+    });
 
     // 확정 시 양측 인앱 알림
     await this.notificationsService.notify(
