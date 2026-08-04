@@ -1,0 +1,39 @@
+# VPS 배포용 (로컬 개발은 docker-compose.yml)
+# 필요 환경변수: .env에 DB_PASSWORD, JWT_SECRET
+services:
+  mysql:
+    image: mysql:8.0
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${DB_PASSWORD:?DB_PASSWORD를 .env에 설정하세요}
+      MYSQL_DATABASE: ${DB_DATABASE:-geeks}
+    command: --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
+    volumes:
+      - ieum-mysql-data:/var/lib/mysql
+    healthcheck:
+      test: ['CMD-SHELL', 'mysqladmin ping -uroot -p$$MYSQL_ROOT_PASSWORD']
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  app:
+    build: .
+    restart: unless-stopped
+    ports:
+      - '3000:3000'
+    environment:
+      DB_HOST: mysql
+      DB_PORT: 3306
+      DB_USERNAME: root
+      DB_PASSWORD: ${DB_PASSWORD:?}
+      DB_DATABASE: ${DB_DATABASE:-geeks}
+      JWT_SECRET: ${JWT_SECRET:?JWT_SECRET을 .env에 설정하세요}
+    volumes:
+      - ieum-uploads:/app/uploads
+    depends_on:
+      mysql:
+        condition: service_healthy
+
+volumes:
+  ieum-mysql-data:
+  ieum-uploads:
