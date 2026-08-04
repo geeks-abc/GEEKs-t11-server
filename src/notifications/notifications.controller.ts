@@ -1,4 +1,11 @@
-import { Controller, Get, Param, ParseIntPipe, Patch, Query } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Param,
+  ParseIntPipe,
+  Patch,
+  Query,
+} from '@nestjs/common';
 import { NotificationsService } from './notifications.service';
 import { RecipientType } from '../common/enums';
 
@@ -12,7 +19,10 @@ export class NotificationsController {
     @Query('recipientType') recipientType: RecipientType,
     @Query('recipientId', ParseIntPipe) recipientId: number,
   ) {
-    return this.notificationsService.findByRecipient(recipientType, recipientId);
+    return this.notificationsService.findByRecipient(
+      recipientType,
+      recipientId,
+    );
   }
 
   @Patch(':id/read')

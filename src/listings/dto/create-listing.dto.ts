@@ -1,11 +1,5 @@
 import { Type } from 'class-transformer';
-import {
-  IsDate,
-  IsInt,
-  IsOptional,
-  IsString,
-  Min,
-} from 'class-validator';
+import { IsDate, IsInt, IsOptional, IsString, Min } from 'class-validator';
 
 export class CreateListingDto {
   @IsInt()
