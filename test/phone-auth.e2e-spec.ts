@@ -143,4 +143,34 @@ describe('전화번호 인증 (e2e)', () => {
     expect(reuse.status).toBe(401);
   });
 
+  it('마이페이지 프로필 수정: 이름·주소·연락처 반영 + 닉네임 동기화', async () => {
+    const phone = '010-4444-7777';
+    const code = await requestCode(phone);
+    const verify = await request(app.getHttpServer())
+      .post('/api/auth/phone/verify')
+      .send({ phone, code });
+    const signup = await request(app.getHttpServer())
+      .post('/api/auth/phone/signup')
+      .send({
+        signupToken: verify.body.signupToken,
+        nickname: '수정 전 빵집',
+        role: 'STORE',
+      });
+    const token = signup.body.accessToken;
+
+    const patch = await request(app.getHttpServer())
+      .patch('/api/auth/mypage/profile')
+      .set('Authorization', `Bearer ${token}`)
+      .send({ name: '수정 후 빵집', address: '서울 마포구 새길 1', phone: '02-111-2222' });
+    expect(patch.status).toBe(200);
+
+    const me = await request(app.getHttpServer())
+      .get('/api/auth/me')
+      .set('Authorization', `Bearer ${token}`);
+    expect(me.body.nickname).toBe('수정 후 빵집');
+    expect(me.body.store.name).toBe('수정 후 빵집');
+    expect(me.body.store.address).toBe('서울 마포구 새길 1');
+    expect(me.body.store.phone).toBe('02-111-2222');
+  });
+
 });
