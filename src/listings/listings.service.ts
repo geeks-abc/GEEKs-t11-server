@@ -92,6 +92,7 @@ export class ListingsService {
   }
 
   async findOne(id: number) {
+    await this.expireOverdue();
     const listing = await this.listingRepo.findOne({
       where: { id },
       relations: { store: true, match: { facility: true } },
@@ -100,7 +101,8 @@ export class ListingsService {
     return listing;
   }
 
-  findByStore(storeId: number) {
+  async findByStore(storeId: number) {
+    await this.expireOverdue();
     return this.listingRepo.find({
       where: { storeId },
       relations: { match: { facility: true } },
