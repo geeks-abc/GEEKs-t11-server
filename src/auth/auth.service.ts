@@ -8,6 +8,8 @@ import { Repository } from 'typeorm';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcryptjs';
 import { User } from './entities/user.entity';
+import { Store } from '../stores/entities/store.entity';
+import { Facility } from '../facilities/entities/facility.entity';
 import { SignupDto } from './dto/signup.dto';
 import { LoginDto } from './dto/login.dto';
 
@@ -15,6 +17,9 @@ import { LoginDto } from './dto/login.dto';
 export class AuthService {
   constructor(
     @InjectRepository(User) private readonly userRepo: Repository<User>,
+    @InjectRepository(Store) private readonly storeRepo: Repository<Store>,
+    @InjectRepository(Facility)
+    private readonly facilityRepo: Repository<Facility>,
     private readonly jwtService: JwtService,
   ) {}
 
@@ -44,10 +49,20 @@ export class AuthService {
     return this.issueToken(user);
   }
 
+  // 헤더 "현재 접속 중: ○○" 표시용 — 연결된 가게/시설 프로필 포함
   async me(userId: number) {
     const user = await this.userRepo.findOne({ where: { id: userId } });
     if (!user) throw new UnauthorizedException();
-    return user;
+
+    const [store, facility] = await Promise.all([
+      user.storeId
+        ? this.storeRepo.findOne({ where: { id: user.storeId } })
+        : null,
+      user.facilityId
+        ? this.facilityRepo.findOne({ where: { id: user.facilityId } })
+        : null,
+    ]);
+    return { ...user, store, facility };
   }
 
   private issueToken(user: User) {

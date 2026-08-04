@@ -63,4 +63,19 @@ export class MatchesController {
   ) {
     return this.matchesService.complete(id, dto.qrToken);
   }
+
+  // A-3 보완. 픽업 취소
+  @ApiOperation({
+    summary: '매칭 취소 (A-3 보완)',
+    description:
+      '시설이 픽업을 취소하면 품목이 다시 OPEN으로 복구되고 양측에 알림. 인수 완료(COMPLETED) 후에는 불가.',
+  })
+  @ApiCreatedResponse({
+    schema: { example: { ok: true, listingId: 10, status: 'OPEN' } },
+  })
+  @ApiResponse({ status: 409, description: '이미 인수 완료된 기부' })
+  @Post(':id/cancel')
+  cancel(@Param('id', ParseIntPipe) id: number) {
+    return this.matchesService.cancel(id);
+  }
 }

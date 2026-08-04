@@ -1,5 +1,6 @@
 import {
   BadRequestException,
+  ConflictException,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
@@ -7,6 +8,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { LessThan, Repository } from 'typeorm';
 import { Listing } from './entities/listing.entity';
 import { CreateListingDto } from './dto/create-listing.dto';
+import { UpdateListingDto } from './dto/update-listing.dto';
 import { ListingStatus } from '../common/enums';
 import { FacilitiesService } from '../facilities/facilities.service';
 import { NotificationsService } from '../notifications/notifications.service';
@@ -108,6 +110,47 @@ export class ListingsService {
       relations: { match: { facility: true } },
       order: { createdAt: 'DESC' },
     });
+  }
+
+  // 품목 수정 — OPEN 상태에서만 (수량 정정, 픽업 시간 변경 등)
+  async update(id: number, dto: UpdateListingDto) {
+    await this.expireOverdue();
+    const listing = await this.listingRepo.findOne({ where: { id } });
+    if (!listing) throw new NotFoundException('품목을 찾을 수 없습니다.');
+    if (listing.status !== ListingStatus.OPEN) {
+      throw new ConflictException('진행 전(OPEN) 품목만 수정할 수 있습니다.');
+    }
+
+    const pickupStart = dto.pickupStart ?? listing.pickupStart;
+    const pickupEnd = dto.pickupEnd ?? listing.pickupEnd;
+    if (new Date(pickupStart) >= new Date(pickupEnd)) {
+      throw new BadRequestException(
+        '픽업 시작 시간은 종료 시간보다 빨라야 합니다.',
+      );
+    }
+    if (new Date(pickupEnd) <= new Date()) {
+      throw new BadRequestException('픽업 종료 시간은 현재 이후여야 합니다.');
+    }
+
+    await this.listingRepo.update(id, dto);
+    return this.findOne(id);
+  }
+
+  // 품목 등록 취소 — OPEN 상태에서만 (매칭된 건은 매칭 취소로 처리)
+  async cancel(id: number) {
+    const exists = await this.listingRepo.existsBy({ id });
+    if (!exists) throw new NotFoundException('품목을 찾을 수 없습니다.');
+
+    const cancelled = await this.listingRepo.update(
+      { id, status: ListingStatus.OPEN },
+      { status: ListingStatus.CANCELLED },
+    );
+    if (cancelled.affected === 0) {
+      throw new ConflictException(
+        '진행 전(OPEN) 품목만 취소할 수 있습니다. 매칭된 품목은 매칭 취소를 이용하세요.',
+      );
+    }
+    return this.findOne(id);
   }
 
   // 픽업 시간이 지난 OPEN 품목 자동 만료

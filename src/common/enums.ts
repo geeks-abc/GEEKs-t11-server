@@ -3,6 +3,7 @@ export enum ListingStatus {
   MATCHED = 'MATCHED',
   COMPLETED = 'COMPLETED',
   EXPIRED = 'EXPIRED',
+  CANCELLED = 'CANCELLED',
 }
 
 export enum RecipientType {
